@@ -1,6 +1,6 @@
 # ASYNC-HVAC
 
-[HashiCorp](https://hashicorp.com/) [Vault](https://www.vaultproject.io) API asyncio client for Python 3
+[HashiCorp](https://hashicorp.com/) [Vault](https://www.vaultproject.io) API asyncio client for Python 3 (forked VTB version)
 
 
 [![Travis CI](https://travis-ci.com/Aloomaio/async-hvac.svg?branch=master)](https://travis-ci.com/Aloomaio/async-hvac) [![Latest Version](https://img.shields.io/pypi/v/async-hvac.svg)](https://pypi.python.org/pypi/async-hvac/)

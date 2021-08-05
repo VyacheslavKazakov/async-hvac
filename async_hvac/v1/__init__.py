@@ -559,10 +559,11 @@ class AsyncClient(object):
         """
         params = {
             'increment': increment,
+            'token': token
         }
 
         if token:
-            path = '/v1/auth/token/renew/{0}'.format(token)
+            path = '/v1/auth/token/renew'
             return await (await self._post(path, json=params, wrap_ttl=wrap_ttl)).json()
         else:
             return await (await self._post('/v1/auth/token/renew-self', json=params, wrap_ttl=wrap_ttl)).json()
@@ -723,6 +724,9 @@ class AsyncClient(object):
         }
 
         return self.auth('/v1/auth/{0}/login'.format(mount_point), json=params, use_token=use_token)
+
+    def auth_jwt(self, role, jwt, mount_point='jwt', use_token=True):
+        return self.auth_gcp(role, jwt, mount_point, use_token)
 
     def create_userpass(self, username, password, policies, mount_point='userpass', **kwargs):
         """

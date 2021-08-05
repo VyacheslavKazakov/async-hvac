@@ -14,22 +14,22 @@ if not os.path.exists(vsn_path):
         sys.exit(1)
 
 setup(
-    name='async-hvac',
+    name='vtb-async-hvac',
     version=open(vsn_path, 'r').read(),
-    description='HashiCorp Vault API client',
-    long_description='HashiCorp Vault API python 3.6+ client using asyncio.',
-    author='Lionel Zerbib',
-    author_email='lionel@alooma.io',
-    url='https://github.com/Aloomaio/async-hvac',
+    description='HashiCorp Vault API client (VTB version)',
+    long_description='HashiCorp Vault API python 3.6+ client using asyncio (VTB version).',
+    author='Vyacheslav Kazakov',
+    author_email='vyachka@gmail.com',
+    url='https://github.com/VyacheslavKazakov/async-hvac',
     keywords=['hashicorp', 'vault', 'hvac'],
     classifiers=['License :: OSI Approved :: Apache Software License'],
     packages=find_packages(),
     install_requires=[
-        'aiohttp==3.3.1',
+        'aiohttp==3.7.3',
     ],
     include_package_data=True,
     package_data={'async_hvac': ['version']},
     extras_require={
-        'parser': ['pyhcl==0.3.10']
+        'parser': ['pyhcl==0.4.4']
     }
 )

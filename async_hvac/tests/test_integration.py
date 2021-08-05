@@ -95,6 +95,7 @@ class IntegrationTest(asynctest.TestCase):
         assert 'ha_enabled' in (await self.client.ha_status)
 
     async def test_generic_secret_backend(self):
+        await self.client.enable_secret_backend(backend_type="kv-v1", mount_point="secret")
         await self.client.write('secret/foo', zap='zip')
         result = await self.client.read('secret/foo')
 
@@ -1134,16 +1135,16 @@ class IntegrationTest(asynctest.TestCase):
                                           policies='ec2rolepolicy')
 
         foo_role = await self.client.get_ec2_role('foo')
-        assert (foo_role['data']['ttl'] == 0)
+        assert (foo_role['data']['token_ttl'] == 0)
 
         bar_role = await self.client.get_ec2_role('bar')
-        assert (bar_role['data']['ttl'] == 3600)
+        assert (bar_role['data']['token_ttl'] == 3600)
 
         baz_role = await self.client.get_ec2_role('baz')
-        assert (baz_role['data']['max_ttl'] == 259200)
+        assert (baz_role['data']['token_max_ttl'] == 259200)
 
         qux_role = await self.client.get_ec2_role('qux')
-        assert (qux_role['data']['period'] == 86400)
+        assert (qux_role['data']['token_period'] == 86400)
 
         # teardown
         await self.client.delete_ec2_role('foo')
@@ -1156,7 +1157,7 @@ class IntegrationTest(asynctest.TestCase):
         await self.client.disable_auth_backend('aws-ec2')
 
     async def test_start_generate_root_with_completion(self):
-        test_otp = 'RSMGkAqBH5WnVLrDTbZ+UQ=='
+        test_otp = 'DWzb2txgXvvlwAZd6KnExM7BQH'
 
         self.assertFalse((await self.client.generate_root_status)['started'])
         response = await self.client.start_generate_root(
@@ -1174,21 +1175,22 @@ class IntegrationTest(asynctest.TestCase):
         self.assertFalse((await self.client.generate_root_status)['started'])
 
         # Decode the token provided in the last response. Root token decoding logic derived from:
-        # https://github.com/hashicorp/vault/blob/284600fbefc32d8ab71b6b9d1d226f2f83b56b1d/command/operator_generate_root.go#L289
-        b64decoded_root_token = b64decode(response['encoded_root_token'])
+        # https://github.com/hashicorp/vault/blob/8b331e95a2d94ac002d65e66d639edebc6f5922b/command/operator_generate_root.go#L321
+        b64decoded_root_token = b64decode(response['encoded_root_token'] + '==')
+
         if sys.version_info > (3, 0):
             # b64decoding + bytes XOR'ing to decode the new root token in python 3.x
             int_encoded_token = int.from_bytes(b64decoded_root_token, sys.byteorder)
-            int_otp = int.from_bytes(b64decode(test_otp), sys.byteorder)
+            int_otp = int.from_bytes(test_otp.encode('utf-8'), sys.byteorder)
             xord_otp_and_token = int_otp ^ int_encoded_token
-            token_hex_string = xord_otp_and_token.to_bytes(len(b64decoded_root_token), sys.byteorder).hex()
+            token_bytes = xord_otp_and_token.to_bytes(len(b64decoded_root_token), sys.byteorder)
         else:
             # b64decoding + bytes XOR'ing to decode the new root token in python 2.7
-            otp_and_token = zip(b64decode(test_otp), b64decoded_root_token)
+            otp_and_token = zip(test_otp.encode('utf-8'), b64decoded_root_token)
             xord_otp_and_token = ''.join(chr(ord(y) ^ ord(x)) for (x, y) in otp_and_token)
-            token_hex_string = binascii.hexlify(xord_otp_and_token)
+            token_bytes = xord_otp_and_token.encode('utf-8')
 
-        new_root_token = str(UUID(token_hex_string))
+        new_root_token = token_bytes.decode('utf-8')
 
         # Assert our new root token is properly formed and authenticated
         self.client.token = new_root_token
@@ -1200,7 +1202,7 @@ class IntegrationTest(asynctest.TestCase):
             self.fail('Unable to authenticate with the newly generated root token.')
 
     async def test_start_generate_root_then_cancel(self):
-        test_otp = 'RSMGkAqBH5WnVLrDTbZ+UQ=='
+        test_otp = 'DWzb2txgXvvlwAZd6KnExM7BQH'
 
         self.assertFalse((await self.client.generate_root_status)['started'])
         await self.client.start_generate_root(
